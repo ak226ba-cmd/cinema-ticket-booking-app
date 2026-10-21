@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinema Ticket Booking</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/script.js" defer></script>
+</head>
+<body>
+  <main class="container">
+    <h1>🎬 Cinema Ticket Booking</h1>
+    <p>Choose your movie and book your seat.</p>
+
+    <section class="card">
+      <h2>Book a ticket</h2>
+
+      <label for="movie">Movie</label>
+      <select id="movie">
+        <option value="Interstellar">Interstellar</option>
+        <option value="Inception">Inception</option>
+        <option value="The Dark Knight">The Dark Knight</option>
+      </select>
+
+      <label for="customer">Your name</label>
+      <input id="customer" type="text" placeholder="Enter your name">
+
+      <label for="age">Your age</label>
+      <input id="age" type="number" min="1" value="25">
+
+      <label for="seat">Choose seat</label>
+      <select id="seat">
+        <option value="A1">A1</option>
+        <option value="A2">A2</option>
+        <option value="A3">A3</option>
+        <option value="B1">B1</option>
+        <option value="B2">B2</option>
+        <option value="B3">B3</option>
+      </select>
