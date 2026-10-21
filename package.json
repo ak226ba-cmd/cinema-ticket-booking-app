@@ -10,5 +10,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "1dv610-laboration-2": "github:rosa24-bth/1DV610-laboration-2",
+    "cinema-booking-library": "github:ak226ba-cmd/cinema-booking-library"
+  }
 }
