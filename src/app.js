@@ -27,4 +27,25 @@ if (!seat || !seat.isAvailable()) {
     customerAge,
     'standard'
   )
+
+    // Add ticket to shopping cart
+  const ticketName = `${screening.movieTitle} - ${seat.getSeatLabel()}`
+  const added = cart.addItem(ticketName, price, 1)
+
+  if (!added) {
+    console.log('Could not add ticket to cart')
+  } else {
+    console.log('Ticket added to cart:', ticketName)
+    console.log('Total price:', cart.getTotalPrice(), 'SEK')
+
+    // Confirm the booking
+    const booking = new Booking(customerName, screening, seat)
+
+    if (booking.confirm()) {
+      console.log('Booking confirmed!')
+      console.log(booking.getSummary())
+    } else {
+      console.log('Booking could not be confirmed')
+    }
+  }
 }
