@@ -27,9 +27,105 @@ const contentTypes = {
   '.js': 'text/javascript'
 }
 
+function sendJson(res, status, data) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json'
+  })
+  res.end(JSON.stringify(data))
+}
+
+async function readJson(req) {
+  let body = ''
+
+  for await (const chunk of req) {
+    body += chunk
+    if (body.length > 10000) {
+      throw new Error('Request too large')
+    }
+  }
+
+  return JSON.parse(body)
+}
+
+async function confirmBooking(req, res) {
+  let data
+
+  try {
+    data = await readJson(req)
+  } catch {
+    sendJson(res, 400, { error: 'Invalid request body' })
+    return
+  }
+
+  const { movie, customer, age, seat: seatLabel } = data
+
+  if (
+    typeof movie !== 'string' ||
+    typeof customer !== 'string' ||
+    !customer.trim() ||
+    !Number.isInteger(age) ||
+    age < 1 ||
+    age > 120 ||
+    typeof seatLabel !== 'string'
+  ) {
+    sendJson(res, 400, { error: 'Invalid booking information' })
+    return
+  }
+
+  const screening = screenings.get(movie)
+
+  if (!screening) {
+    sendJson(res, 404, { error: 'Movie not found' })
+    return
+  }
+
+  const match = /^([A-C])([1-5])$/.exec(seatLabel)
+
+  if (!match) {
+    sendJson(res, 400, { error: 'Invalid seat' })
+    return
+  }
+
+  const seat = screening.getSeat(match[1], Number(match[2]))
+
+  if (!seat || !seat.isAvailable()) {
+    sendJson(res, 409, { error: 'Seat is already booked' })
+    return
+  }
+
+  const price = calculator.calculatePrice(120, age, seat.type)
+
+  // Use the second student's module to calculate the cart total.
+  const cart = new ShoppingCart()
+  const ticketName = `${movie} - ${seatLabel}`
+
+  if (!cart.addItem(ticketName, price, 1)) {
+    sendJson(res, 400, { error: 'Could not add ticket' })
+    return
+  }
+
+  const booking = new Booking(customer.trim(), screening, seat)
+
+  if (!booking.confirm()) {
+    sendJson(res, 409, { error: 'Booking failed' })
+    return
+  }
+
+  sendJson(res, 201, {
+    message: 'Booking confirmed',
+    summary: booking.getSummary(),
+    total: cart.getTotalPrice()
+  })
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const pathname = new URL(req.url, 'http://localhost').pathname
+
+    if (pathname === '/api/book' && req.method === 'POST') {
+      await confirmBooking(req, res)
+      return
+    }
 
     const files = {
       '/': 'index.html',
@@ -45,9 +141,7 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
-    const content = await readFile(
-      join(process.cwd(), 'public', filename)
-    )
+    const content = await readFile(join(process.cwd(), 'public', filename))
 
     res.writeHead(200, {
       'Content-Type': contentTypes[extname(filename)]
@@ -56,8 +150,7 @@ const server = http.createServer(async (req, res) => {
     res.end(content)
   } catch (error) {
     console.error(error)
-    res.writeHead(500)
-    res.end('Internal server error')
+    sendJson(res, 500, { error: 'Internal server error' })
   }
 })
 
