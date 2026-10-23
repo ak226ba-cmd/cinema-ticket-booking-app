@@ -16,6 +16,18 @@ function showMessage(message) {
   messageElement.textContent = message
 }
 
+function calculatePrice(age) {
+  if (age < 12) {
+    return 60
+  }
+
+  if (age >= 65) {
+    return 84
+  }
+
+  return 120
+}
+
 function renderCart() {
   if (cart.length === 0) {
     cartItems.textContent = 'Your cart is empty.'
@@ -41,7 +53,13 @@ addButton.addEventListener('click', () => {
   const age = Number(ageInput.value)
   const seat = seatSelect.value
 
-  if (!customer || !ageInput.value || !Number.isInteger(age) || age < 1) {
+  if (
+    !customer ||
+    !ageInput.value ||
+    !Number.isInteger(age) ||
+    age < 1 ||
+    age > 120
+  ) {
     showMessage('Please enter a valid name and age.')
     return
   }
@@ -51,18 +69,80 @@ addButton.addEventListener('click', () => {
     return
   }
 
-  cart.push({ movie, customer, age, seat, price: 120 })
+  const price = calculatePrice(age)
+
+  cart.push({ movie, customer, age, seat, price })
+
   renderCart()
   showMessage('Ticket added to cart.')
 })
 
-checkoutButton.addEventListener('click', () => {
+checkoutButton.addEventListener('click', async () => {
   if (cart.length === 0) {
     showMessage('Your cart is empty.')
     return
   }
 
-  showMessage('Checkout is not connected yet.')
+  checkoutButton.disabled = true
+  showMessage('Confirming your booking...')
+
+  const confirmed = []
+  const failed = []
+
+  try {
+    for (const ticket of cart) {
+      try {
+        const response = await fetch('/api/book', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            movie: ticket.movie,
+            customer: ticket.customer,
+            age: ticket.age,
+            seat: ticket.seat
+          })
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          failed.push({
+            ticket,
+            error: result.error || 'Booking failed'
+          })
+          continue
+        }
+
+        confirmed.push(result)
+      } catch {
+        failed.push({
+          ticket,
+          error: 'Could not connect to the server'
+        })
+      }
+    }
+
+    cart = failed.map(item => item.ticket)
+    renderCart()
+
+    if (confirmed.length > 0 && failed.length === 0) {
+      const total = confirmed.reduce((sum, booking) => sum + booking.total, 0)
+      showMessage(`Booking confirmed! Total: ${total} SEK`)
+    } else if (confirmed.length > 0) {
+      showMessage(
+        `${confirmed.length} booking(s) confirmed. ` +
+        `${failed.length} failed: ${failed.map(item => item.error).join(', ')}`
+      )
+    } else {
+      showMessage(
+        `Booking failed: ${failed.map(item => item.error).join(', ')}`
+      )
+    }
+  } finally {
+    checkoutButton.disabled = false
+  }
 })
 
 renderCart()
