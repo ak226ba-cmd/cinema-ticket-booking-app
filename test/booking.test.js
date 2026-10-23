@@ -35,3 +35,37 @@ test('A booked seat cannot be booked twice', () => {
   assert.equal(firstBooking.confirm(), true)
   assert.equal(secondBooking.confirm(), false)
 })
+
+test('Adult ticket costs 120 SEK', () => {
+  const calculator = new PriceCalculator()
+
+  assert.equal(calculator.calculatePrice(120, 25, 'standard'), 120)
+})
+
+test('Child ticket costs 60 SEK', () => {
+  const calculator = new PriceCalculator()
+
+  assert.equal(calculator.calculatePrice(120, 10, 'standard'), 60)
+})
+
+test('Senior ticket costs 84 SEK', () => {
+  const calculator = new PriceCalculator()
+
+  assert.equal(calculator.calculatePrice(120, 70, 'standard'), 84)
+})
+
+test('A ticket can be added to the shopping cart', () => {
+  const cart = new ShoppingCart()
+
+  assert.equal(cart.addItem('Interstellar - A1', 120, 1), true)
+  assert.equal(cart.getTotalPrice(), 120)
+})
+
+test('Shopping cart calculates multiple tickets', () => {
+  const cart = new ShoppingCart()
+
+  cart.addItem('Interstellar - A1', 120, 1)
+  cart.addItem('Inception - B2', 60, 1)
+
+  assert.equal(cart.getTotalPrice(), 180)
+})
